@@ -20,24 +20,20 @@ int main(int, char** argv){
         cout << "Image " << argv[1] << " could not be opened";
     }
     
-    namedWindow("mainWindow", WINDOW_AUTOSIZE);
-    
-    imshow("mainWindow", img);
-    
     int imgRows = img.rows;
     int imgCols = img.cols;
     int subImageRows = imgRows/(NSUBIMAGES/2);
     int subImageCols = imgCols/(NSUBIMAGES/2);
     
     vector<int> vert;
-    vector<Mat> subImgs;
+    //vector<Mat> subImgs;
     vector<int> vertPuzzle;
     
     cout << "image size: " << imgRows << "x" << imgCols << endl;
     
     cout << "sub image size: " << subImageRows << "x" << subImageCols << endl;
     
-    //cria vetor com os pontos iniciais de cada sub imagem
+    //cria vetor com os pontos de inicio de cada sub imagem
     for (int i =0 ; i < NSUBIMAGES/2; i++) {
         for (int j = 0; j < NSUBIMAGES/2; j++) {
             vert.push_back(i*subImageRows);
@@ -46,23 +42,7 @@ int main(int, char** argv){
         }
     }
     
-    //preenche vetor com sub imagens da imagem inicial, usando construtor de ROI(region on interest)
-    for (int i = 0; i < NSUBIMAGES; i++) {
-        subImgs.push_back(Mat(img, Rect(vert.at(2*i+1), vert.at(2*i), subImageCols, subImageRows)));
-        cout << "Sub Image created !" << endl;
-    }
-    /*
-    namedWindow("subImage1", WINDOW_AUTOSIZE);
-    namedWindow("subImage2", WINDOW_AUTOSIZE);
-    namedWindow("subImage3", WINDOW_AUTOSIZE);
-    namedWindow("subImage4", WINDOW_AUTOSIZE);
-    imshow("subImage1", subImgs.at(0));
-    imshow("subImage2", subImgs.at(1));
-    imshow("subImage3", subImgs.at(2));
-    imshow("subImage4", subImgs.at(3));
-    */
-    //cria vetor aleatorio para reconstrução das subimagens
-    //vertPuzzle.push_back(rand() % NSUBIMAGES);
+    //cria vetor aleatorio para criacao do quebra cabeca
     while (vertPuzzle.size()<NSUBIMAGES) {
         int temp = rand() % NSUBIMAGES;
         int flag = -1;
@@ -76,6 +56,7 @@ int main(int, char** argv){
         }
     }
     
+    //imprime o vetor de reordenacao na tela
     cout << "vetor de reordenção: ";
     for (int i=0; i< vertPuzzle.size(); i++) {
         cout << vertPuzzle.at(i) << ", ";
@@ -84,15 +65,19 @@ int main(int, char** argv){
     
     
     newImg = img.clone();
-    //rotina para copiar subimage para RIO na imagem clone
+    //rotina para copiar uma RIO da imagem original para outra posicao no quebra cabeca
     for (int i = 0; i < NSUBIMAGES; i++) {
         int x = vert.at(2*vertPuzzle.at(i)+1);
         int y = vert.at(2*vertPuzzle.at(i));
-        Mat(subImgs.at(i), Rect(0, 0, subImageCols, subImageRows)).copyTo(Mat(newImg, Rect(x, y, subImageCols,subImageRows)));
+	int x0 = vert.at(2*i+1);
+        int y0 = vert.at(2*i);
+        Mat(img, Rect(x0, y0, subImageCols, subImageRows)).copyTo(Mat(newImg, Rect(x, y, subImageCols,subImageRows)));
     }
     
-    namedWindow("PuzzleWindow", WINDOW_AUTOSIZE);
-    imshow("PuzzleWindow", newImg);
+    namedWindow("PuzzleImage", WINDOW_AUTOSIZE);
+    imshow("PuzzleImage", newImg);
+    namedWindow("Image", WINDOW_AUTOSIZE);
+    imshow("Image", img);
      
     waitKey();
     return 0;
