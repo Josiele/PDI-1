@@ -1,0 +1,15 @@
+#Exercício 3.1 - regions.cpp
+
+O programa tem como parâmetro o caminho para um arquivo de imagem, que será carregada em um objeto do tipo Mat no formato de tons de cinza.
+Uma região retangular dessa imagem, definida pelo usuário através das variaveis P1X, P2X, P1Y e P2Y, terá seus valores negativados, para
+isso o valores dos pixels da região selecionada será 255 subtraído por ele mesmo. Dessa forma, a região definida pelo usuário terá tons
+de cinza opostos ao original, criando o efeito de negativo.
+
+#Exercício 3.2 - trocaRegioes.cpp
+
+O programa trocaRegiões.cpp tem como parâmetro um caminho para uma imagem, que será então carregada em tons de cinza. Esta imagem será 
+dividida em quatro subregiões que serão embaralhadas, criando um quebra-cabeça, com forme um vetor de índices gerado randomicamente.
+Para a formação do quebra-cabeça os vetores 'vert', que armazena as coordenadas x e y das 4 subregiões no formato[x0,y0,x1,y2,...],
+e o vetor 'vertPuzzle', que contêm a ordem em que as subregiões irão entrar na imagem do quebra-cabeça. 
+A função copyTo(Mat, ROI) foi usada para fazer a cópia da região da imagem original para a nova região, dada pelo vetor 'vertPuzzle',
+no quebra-cabeça.
