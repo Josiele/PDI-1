@@ -1,0 +1,69 @@
+:source-highlighter: pygments
+:stem:
+:toc: left
+:toc-title: Sumário
+
+= Processamento Digital de Imagens
+Filipe Viana <filipeviana_@live.com>; Gusttavo Silva <gust.tavohenrique@hotmail.com>
+
+== 1. Introdução
+
+Neste relatório, serão mostrados os códigos de implementação das atividades da dasciplina Processamento Digital de Imagens do curso de Engenharia de Computação da Universidade Federal do Rio Grande do Norte (UFRN). Nesse documento, abordaremos sobre o uso da biblioteca openCV (Open Source Computer Vision Library), bastante utilizada na resolução de problemas de tratamento de imagens, visão computacional e reconhecimento de padrões.
+
+Obs.: A compilação de todos os programas desse documento é feita junto com o programa Makefile. Para obter uma cópia desse programa, clique aqui.
+
+== 3. Preenchendo regiões
+
+=== 3.1 Contagem de objetos 
+link:http://agostinhobritojr.github.io/tutoriais/pdi/#_exerc%C3%ADcios_2[Ver exercício 4.2.1]
+
+Inicialmente o programa link:codigos/regions.cpp[regions.cpp], mostrado na <<exa_regions>>,
+solicita ao usuário duas coordenadas (x y) referentes aos pontos P1 e P2 localizados dentro
+dos limites do tamanho da imagem. Em seguida é feito dois for's para percorrer as colunas (x) e
+linhas (y) dentro da região definida pelo retângulo de vértices opostos formado por P1 e P2 e
+, dentro desse loop, é feito o negativo da imagem que consiste na diferença entre o tom 255
+e o tom específico do pixel em questão.
+
+A saída do programa _regions_, para entradas (20 40) e (100 150), é mostrado na <<regioes-1>>.
+
+[[regioes-1, Figura 1]]
+//[.text-center]
+.Saída do programa regions
+image::imagens/regions_saida.png[Saida do programa regions, title="Saída do programa regions"]
+
+A seguir o códio regions.cpp.
+
+[[exa_regions, Listagem 1]]
+[source,cpp]
+.Listagem 1 : regions.cpp
+----
+include::codigos/regions.cpp[regions.cpp]
+----
+
+=== 3.2 Contagem de objetos com ou sem buracos
+link:http://agostinhobritojr.github.io/tutoriais/pdi/#_exerc%C3%ADcios_2[Ver exercício 4.2.2]
+
+A solução proposta para esse problema foi a seguinte: antes de tudo, desenhamos um retângulo com nível 
+de cinza igual a 255 na borda da imagem. Depois disso, utilizamos a função floodFill no primeiro pixel 
+da imagem mudando os valores dos tons dos pixels para zero. Dessa forma, os objetos que estavam em contato
+
+Após a remoção dos objetos da borda, alteramos o ton do fundo da imagem para o valor 100.
+Os buracos dos objetos continuaram com o ton de cinza 0 e os objetos com 255. Fazendo uma varredura
+sequêncial nos pixels da imagem, ao encontrar um pixel com nível de cinza igual a 255, passamos o floodfill
+mudando a cor do objeto para 200 e realizando a contagem do mesmo. Caso um pixel com valor igual a 0 fosse encontrado,
+alteravamos sua cor para a nova cor de fundo e contabilzavamos um buraco. Para finalizar, passamos novamente
+o floodFill no primeiro pixel da imagem para mudar a cor do fundo para 0.
+
+O código do programa link:codigos/regions.cpp[contagemObjetos2.cpp] pode ser visto na <<exa_regions> contagemObjetos2.cpp
+
+[[exa_regions, Listagem 1]]
+[source,cpp]
+.Listagem 1 : regions.cpp
+----
+include::codigos/regions.cpp[regions.cpp]
+----
+
+A imagem original é pode ser vista em . A saída do programa é mostrada na imagem .
+
+
+
