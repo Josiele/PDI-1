@@ -8,8 +8,25 @@ de cinza opostos ao original, criando o efeito de negativo.
 #Exercício 3.2 - trocaRegioes.cpp
 
 O programa trocaRegiões.cpp tem como parâmetro um caminho para uma imagem, que será então carregada em tons de cinza. Esta imagem será 
-dividida em quatro subregiões que serão embaralhadas, criando um quebra-cabeça, com forme um vetor de índices gerado randomicamente.
+dividida em quatro subregiões que serão embaralhadas, criando um quebra-cabeça, conforme um vetor de índices gerado randomicamente.
 Para a formação do quebra-cabeça os vetores 'vert', que armazena as coordenadas x e y das 4 subregiões no formato[x0,y0,x1,y2,...],
 e o vetor 'vertPuzzle', que contêm a ordem em que as subregiões irão entrar na imagem do quebra-cabeça. 
 A função copyTo(Mat, ROI) foi usada para fazer a cópia da região da imagem original para a nova região, dada pelo vetor 'vertPuzzle',
 no quebra-cabeça.
+
+#Exercício 5.1 - equalize.cpp
+
+O programa equalize.cpp faz uso da webcam primária do dispositivo em que está sendo executado, a captura dos frames é dado pela classe
+VideoCapture. A imagem capturada é então convertida para tons de cinza usando a função cvtColot(Mat, Mat, CV_BGR2GRAY) e essa imagem 
+em tons de cinza tem é equalizada fazendo-se uso da função equalizeHist(Mat, Mat), que tem como entrada a imagem a ser equalizada e
+a imagem, ou elemento da classe Mat, que irá armazenar a imagem equalizada. 
+
+#Exercício 5.2 - MotionDetector.cpp
+
+Assim como o programa 'equalize.cpp', o motionDetector.cpp faz uso da classe VideoCapture para capturar imagens através de uma webcam
+disponível no dispositivo em que está sendo executada. O frame capturado é então convertido de RGB para tons de cinza, e tem seu histograma 
+calculado fazendo uso da função calcHist(). O histograma do frame é então armazenada para que possa ser comparado com o histograma do 
+próximo frame a ser capturado. A função compareHist() então calcula a differença entre o histograma do frame capturado com o do frame
+capturado anteriormente, caso essa diferença ultrapasse um limiar definido no programa, temos então que houve movimento na região
+de captura da câmera, e um alerta é enviado ao usuário através do terminal.
+
