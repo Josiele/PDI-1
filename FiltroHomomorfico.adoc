@@ -1,0 +1,183 @@
+== 8. Filtragem no Domínio da Frequência
+
+=== 8.2 Filtro Homomórfico
+
+O exercício proposto consiste em realizar a filtragem de uma imagem para atenuar efeitos de iluminação irregular. Para tal, foi realizada uma filtragem no domínio da frequência utilizando um filtro homomórfico descrito pela equação abaixo.
+
+stem:[H(u,v) = (\gamma_h - \gamma_l)(1 - e^{-c\frac{D^2_{uv}}{D^2_0}}) + \gamma_l]
+
+Primeiramente, para que seja realizada uma filtragem no domínio da frequência, a imagem a ser filtrada deve estar nesse domínio, e para tal usou-se a DFT. O primeiro passo para realizar a operação do DFT é redimensionar a imagem para um tamanho ótimo e criar uma matriz de dois canais contendo a parte real e imaginária da imagem. Esse procedimento é realizado pela função preparaDFT() que pode ser vista abaixo.
+
+[[app-listing]]
+[source, cpp]
+.preparaDFT()
+----
+void preparaDFT(Mat img, Mat& complexImg, bool print = false){
+    //calcula tamanho ideal para o calcula da DFT
+    int M = getOptimalDFTSize(img.rows);
+    int N = getOptimalDFTSize(img.cols);
+
+    Mat paddedImg;
+    Mat_<float> realInput, zeros;
+    //aumenta a imagem para o tamanho ideal
+    copyMakeBorder(img, paddedImg, 0, M - img.rows, 0, N - img.cols, BORDER_CONSTANT, Scalar::all(0));
+    //imprime a imagem redimensionada caso solicitado
+    if(print)
+    imshow("Imagem Redimensionada", paddedImg);
+    //inicializa uma matriz de zeros (parte imaginaria)
+    zeros = Mat_<float>::zeros(paddedImg.size());
+    complexImg = Mat(paddedImg.size(), CV_32FC2, Scalar(0));
+    //converte a parte real da imagem para float
+    realInput = Mat_<float>(paddedImg);
+    //junta parte real e imaginaria em uma matriz de dois canais
+    vector<Mat> planos;
+    planos.push_back(realInput);
+    planos.push_back(zeros);
+    merge(planos, complexImg);
+}
+----
+
+O próximo passo é calcular a DFT da imagem e preparar para a filtragem, reorganizando o espectro. Essa operação é realizada pela função calculaDFT() que tem como entrada a matriz da imagem e uma variavel booleana que habilita mostrar a imagem no espectro para o usuário.
+
+[[app-listing]]
+[source, cpp]
+.calculaDFT()
+----
+void calculaDFT(Mat complexImg, bool print = false){
+    //calcula o dft da imagem
+    dft(complexImg, complexImg);
+    //reorganiza o espectro
+    deslocaDFT(complexImg);
+    //imprime o espectro caso solicitado
+    if(print){
+        vector<Mat> planos;
+        split(complexImg, planos);
+        //normalize(planos[0], planos[0], 0, 1, CV_MINMAX);
+        imshow("Espectro da Imagem", planos[1]);
+    }
+}
+----
+
+A funcão geraFiltroHomomorfico() é usada para criar um matriz de dois canais contendo o filtro homomórfico conforme descrito na equação. Esta função tem como entradas: a matriz da imagem complexa, a matriz onde será armazenado o filtro, stem:[\gamma_h], stem:[\gamma_l], stem:[D_0], stem:[c] e um valor booleano que irá mostrar a imagem do filtro caso true seja passado.
+
+[[app-listing]]
+[source, cpp]
+.geraFiltroHomomorfico()
+----
+void geraFiltroHomomorfico(Mat complexImg, Mat& filtro, float gamaH, float gamaL, float raio, float var, bool print = false){
+    vector<Mat> planos;
+    //separa os canais da matriz da imagem complexa
+    split(complexImg, planos);
+
+    Mat img = planos[0];
+    //cria matriz temporaria de mesmo tamanho da matriz da imagem
+    Mat tmp;
+    tmp = Mat(img.size(), CV_32F, Scalar(0));
+
+    int M = tmp.rows;
+    int N = tmp.cols;
+    //preenche a matriz temporaria com o filtro
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            float Duv = (i - M/2)*(i - M/2)+(j - N/2)*(j - N/2);
+            Duv = sqrt(Duv);
+            float pot = -var*((Duv*Duv)/(raio*raio));
+            tmp.at<float>(i,j) = (gamaH - gamaL)*(1-exp(pot)) + gamaL;
+        }
+    }
+
+    filtro = Mat(img.size(), CV_32FC2, Scalar(0));
+    //cria uma matriz de filtro com dois canais iguais
+    planos.clear();
+    planos.push_back(tmp);
+    planos.push_back(tmp);
+    merge(planos, filtro);
+    //imprime o filtro caso solicitado
+    if(print)
+    imshow("filtro homomorfico", tmp);
+
+}
+----
+
+Uma vez que a imagem já foi transfomada para o domínio da frequência e o filtro a ser usado já foi gerado, pode-se então realizar a operação de filtragem. Usa-se, então, a função mulSpectrums() disponível na biblioteca do openCV.
+
+O último passo é realizar a transformada inversa para que a imagem retorne ao domínio original. A função calculaDFTInversa() é usada para reorganizar o espectro, realizar a transformada inversa, separar os canais e retornar a parte real da imagem.
+
+[[app-listing]]
+[source, cpp]
+.calculaDFTInversa()
+----
+void calculaDFTInverso(Mat complexImg, Mat& imgFiltrada, Mat imgOriginal){
+    //reorganiza o espectro
+    deslocaDFT(complexImg);
+
+    //calcula DFT inversa
+    idft(complexImg, complexImg);
+
+    //separa os canais
+    vector<Mat> planos;
+    split(complexImg, planos);
+
+    //normaliza a imagem para valores float entre 0 e 1
+    normalize(planos[0], planos[0], 0, 1, CV_MINMAX);
+    imgFiltrada = planos[0];
+    /*
+    //redimensiona a imagem para o tamanho da imagem original
+    if(imgOriginal.cols == planos[0].cols && imgOriginal.rows == planos[0].rows)
+        imgFiltrada = planos[0];
+    else
+        Mat(planos[0], Rect(0,0,imgOriginal.rows-1, imgOriginal.cols-1)).copyTo(imgFiltrada);
+    */
+}
+----
+
+A função main() do programa de filtragem pode ser visto abaixo.
+
+[[app-listing]]
+[source, cpp]
+.main()
+----
+int main(int, char** argv){
+    Mat img, complexImage, filtro, imgFiltrada;
+
+    img = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
+    if(!img.data)
+    cout << "erro ao tentar abrir a imagem " << argv[1] << endl;
+
+    imshow("Imagem Original", img);
+
+    preparaDFT(img, complexImage);
+
+    calculaDFT(complexImage);
+
+    geraFiltroHomomorfico(complexImage, filtro, 1.3, 0.7, 30, 1, true);
+
+    // aplica o filtro frequencial
+    mulSpectrums(complexImage, filtro, complexImage, 0);
+
+    calculaDFTInverso(complexImage, imgFiltrada, img);
+
+    imshow("Imagem Filtrada", imgFiltrada);
+
+    waitKey();
+    return 0;
+}
+----
+
+Para a validação do algoritmo implementado foi usada a imagem com problema de iluminação irregular abaixo.
+
+[[imgOriginal]]
+image::/images/homomorfica.png[title = "Imagem Original", width = "256", height = "256"]
+
+Os parâmetros usados para o filtro homomórfico foram stem:[\gamma_h = 1.3], stem:[\gamma_l = 0.7], stem:[D_0 = 30] e stem:[c = 1]. O filtro gerado pode ser visualizado na imagem abaixo.
+
+[[filtro]]
+image::/images/FiltroHomomorfico.png[title = "Filtro Homomórfico", width = "256", height = "256"]
+
+O resultado do processo de filtragem pode ser conferido abaixo.
+
+[[imgfiltrada]]
+image::/images/imgFiltrada.png[title = "Imagem Filtrada", width = "256", height = "256"]
+
+O aquivo completo pode ser baixado link:/Projetos/filtroHomomorfico.cpp[aqui].
+
