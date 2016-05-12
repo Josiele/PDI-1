@@ -6,6 +6,40 @@
 using namespace std;
 using namespace cv;
 
+float gammaH;
+int gammaH_slider = 60;
+int gammaH_slider_max = 100;
+
+float gammaL;
+int gammaL_slider = 20;
+int gammaL_slider_max = 100;
+
+float c;
+int c_slider = 1;
+int c_slider_max = 100;
+
+float D0;
+int D0_slider = 20;
+int D0_slider_max = 100;
+
+char TrackbarName[50];
+
+void on_trackbar_gammaH(int, void*){
+    gammaH = (float) gammaH_slider;
+}
+
+void on_trackbar_gammaL(int, void*){
+    gammaL = (float) gammaL_slider;
+}
+
+void on_trackbar_c(int, void*){
+    c = (float) c_slider;
+}
+
+void on_trackbar_D0(int, void*){
+    D0 = (float) D0_slider;
+}
+
 // troca os quadrantes da imagem da DFT
 void deslocaDFT(Mat& image ){
     Mat tmp, A, B, C, D;
@@ -56,9 +90,6 @@ void preparaDFT(Mat img, Mat& complexImg, bool print = false){
 }
 
 void calculaDFT(Mat complexImg, bool print = false){
-    //calcula o ln de cada elemento da matriz de dois canais
-    log(complexImg+1,complexImg);
-    
     //calcula o dft da imagem
     dft(complexImg, complexImg);
     //reorganiza o espectro
@@ -90,7 +121,7 @@ void geraFiltroHomomorfico(Mat complexImg, Mat& filtro, float gamaH, float gamaL
             float Duv = (i - M/2)*(i - M/2)+(j - N/2)*(j - N/2);
             Duv = sqrt(Duv);
             float pot = -var*((Duv*Duv)/(raio*raio));
-            tmp.at<float>(i,j) = (gamaH - gamaL)*exp(pot) + gamaL;
+            tmp.at<float>(i,j) = (gamaH - gamaL)*(1-exp(pot)) + gamaL;
         }
     }
     
@@ -103,6 +134,7 @@ void geraFiltroHomomorfico(Mat complexImg, Mat& filtro, float gamaH, float gamaL
     //imprime o filtro caso solicitado
     if(print)
         imshow("filtro homomorfico", tmp);
+    
 }
 
 void calculaDFTInverso(Mat complexImg, Mat& imgFiltrada, Mat imgOriginal){
@@ -113,9 +145,6 @@ void calculaDFTInverso(Mat complexImg, Mat& imgFiltrada, Mat imgOriginal){
     //separa os canais
     vector<Mat> planos;
     split(complexImg, planos);
-    
-    //calcula exponencial da parte real da imagem complexa
-    //exp(planos[0], planos[0]);
     
     //normaliza a imagem para valores float entre 0 e 1
     normalize(planos[0], planos[0], 0, 1, CV_MINMAX);
@@ -129,28 +158,72 @@ void calculaDFTInverso(Mat complexImg, Mat& imgFiltrada, Mat imgOriginal){
     */
 }
 
+
 int main(int, char** argv){
     Mat img, complexImage, filtro, imgFiltrada;
+    char key;
     
     img = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
     if(!img.data)
         cout << "erro ao tentar abrir a imagem " << argv[1] << endl;
     
+    namedWindow("Imagem Original", 1);
+    
+    sprintf( TrackbarName, "Gamma H: ");
+    createTrackbar( TrackbarName, "Imagem Original",
+                   &gammaH_slider,
+                   gammaH_slider_max,
+                   on_trackbar_gammaH );
+    on_trackbar_gammaH(gammaH_slider, 0 );
+    
+    sprintf( TrackbarName, "Gamma L: ");
+    createTrackbar( TrackbarName, "Imagem Original",
+                   &gammaL_slider,
+                   gammaL_slider_max,
+                   on_trackbar_gammaL );
+    on_trackbar_gammaL(gammaL_slider, 0 );
+    
+    sprintf( TrackbarName, "C: ");
+    createTrackbar( TrackbarName, "Imagem Original",
+                   &c_slider,
+                   c_slider_max,
+                   on_trackbar_c );
+    on_trackbar_c(c_slider, 0 );
+    
+    sprintf( TrackbarName, "D0: ");
+    createTrackbar( TrackbarName, "Imagem Original",
+                   &D0_slider,
+                   D0_slider_max,
+                   on_trackbar_D0 );
+    on_trackbar_D0(D0_slider, 0 );
+    
     imshow("Imagem Original", img);
     
-    preparaDFT(img, complexImage);
+    for (;;) {
     
-    calculaDFT(complexImage);
+        preparaDFT(img, complexImage);
+        
+        log(complexImage+1, complexImage);
     
-    geraFiltroHomomorfico(complexImage, filtro, 1.1, 0.9, 20, 1);
+        calculaDFT(complexImage);
     
-    // aplica o filtro frequencial
-    mulSpectrums(complexImage, filtro, complexImage, 0);
+        geraFiltroHomomorfico(complexImage, filtro, gammaH, gammaL, D0, c, true);
     
-    calculaDFTInverso(complexImage, imgFiltrada, img);
+        // aplica o filtro frequencial
+        mulSpectrums(complexImage, filtro, complexImage, 0);
     
-    imshow("Imagem Filtrada", imgFiltrada);
+        calculaDFTInverso(complexImage, imgFiltrada, img);
+        
+        exp(imgFiltrada, imgFiltrada);
+        normalize(imgFiltrada, imgFiltrada, 0, 1, CV_MINMAX);
     
-    waitKey();
+        imshow("Imagem Filtrada", imgFiltrada);
+        
+        key = (char) waitKey(10);
+        if (key == 27) {
+            break;
+        }
+    }
+
     return 0;
 }

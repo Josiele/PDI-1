@@ -131,7 +131,7 @@ void calculaDFTInverso(Mat complexImg, Mat& imgFiltrada, Mat imgOriginal){
 }
 ----
 
-A função main() do programa de filtragem pode ser visto abaixo.
+A função main() do programa de filtragem pode ser visto abaixo. Como podemos observar, após preparada para realização da DFT, a matriz complexa da imagem sofre um operação logarítmica com seu valor adicionado de 1 para evitar problema de indefinição da função logaritmo. Além disso, após a realização da DFT inversa, a parte real da imagem filtrada passa pela função exponencial e tem seus valores normalizados entre 0 e 1. Esses dois passos descritos acima também fazem parte do algoritmo de filtragem homomórfica.
 
 [[app-listing]]
 [source, cpp]
@@ -139,29 +139,73 @@ A função main() do programa de filtragem pode ser visto abaixo.
 ----
 int main(int, char** argv){
     Mat img, complexImage, filtro, imgFiltrada;
+    char key;
 
     img = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
     if(!img.data)
-    cout << "erro ao tentar abrir a imagem " << argv[1] << endl;
+        cout << "erro ao tentar abrir a imagem " << argv[1] << endl;
+
+    namedWindow("Imagem Original", 1);
+
+    sprintf( TrackbarName, "Gamma H: ");
+    createTrackbar( TrackbarName, "Imagem Original",
+    &gammaH_slider,
+    gammaH_slider_max,
+    on_trackbar_gammaH );
+    on_trackbar_gammaH(gammaH_slider, 0 );
+
+    sprintf( TrackbarName, "Gamma L: ");
+    createTrackbar( TrackbarName, "Imagem Original",
+    &gammaL_slider,
+    gammaL_slider_max,
+    on_trackbar_gammaL );
+    on_trackbar_gammaL(gammaL_slider, 0 );
+
+    sprintf( TrackbarName, "C: ");
+    createTrackbar( TrackbarName, "Imagem Original",
+    &c_slider,
+    c_slider_max,
+    on_trackbar_c );
+    on_trackbar_c(c_slider, 0 );
+
+    sprintf( TrackbarName, "D0: ");
+    createTrackbar( TrackbarName, "Imagem Original",
+    &D0_slider,
+    D0_slider_max,
+    on_trackbar_D0 );
+    on_trackbar_D0(D0_slider, 0 );
 
     imshow("Imagem Original", img);
 
-    preparaDFT(img, complexImage);
+    for (;;) {
 
-    calculaDFT(complexImage);
+        preparaDFT(img, complexImage);
 
-    geraFiltroHomomorfico(complexImage, filtro, 1.3, 0.7, 30, 1, true);
+        log(complexImage+1, complexImage);
 
-    // aplica o filtro frequencial
-    mulSpectrums(complexImage, filtro, complexImage, 0);
+        calculaDFT(complexImage);
 
-    calculaDFTInverso(complexImage, imgFiltrada, img);
+        geraFiltroHomomorfico(complexImage, filtro, gammaH, gammaL, D0, c, true);
 
-    imshow("Imagem Filtrada", imgFiltrada);
+        // aplica o filtro frequencial
+        mulSpectrums(complexImage, filtro, complexImage, 0);
 
-    waitKey();
+        calculaDFTInverso(complexImage, imgFiltrada, img);
+
+        exp(imgFiltrada, imgFiltrada);
+        normalize(imgFiltrada, imgFiltrada, 0, 1, CV_MINMAX);
+
+        imshow("Imagem Filtrada", imgFiltrada);
+
+        key = (char) waitKey(10);
+        if (key == 27) {
+            break;
+        }
+    }
+
     return 0;
 }
+
 ----
 
 Para a validação do algoritmo implementado foi usada a imagem com problema de iluminação irregular abaixo.
@@ -169,12 +213,7 @@ Para a validação do algoritmo implementado foi usada a imagem com problema de 
 [[imgOriginal]]
 image::/images/homomorfica.png[title = "Imagem Original", width = "256", height = "256"]
 
-Os parâmetros usados para o filtro homomórfico foram stem:[\gamma_h = 1.3], stem:[\gamma_l = 0.7], stem:[D_0 = 30] e stem:[c = 1]. O filtro gerado pode ser visualizado na imagem abaixo.
-
-[[filtro]]
-image::/images/FiltroHomomorfico.png[title = "Filtro Homomórfico", width = "256", height = "256"]
-
-O resultado do processo de filtragem pode ser conferido abaixo.
+Os parâmetros usados para o filtro homomórfico foram stem:[\gamma_h = 50], stem:[\gamma_l = 30], stem:[D_0 = 30] e stem:[c = 40]. O resultado do processo de filtragem pode ser conferido abaixo.
 
 [[imgfiltrada]]
 image::/images/imgFiltrada.png[title = "Imagem Filtrada", width = "256", height = "256"]
